@@ -1,66 +1,73 @@
-import Image from "next/image";
+"use client";
+
+import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
 
 export default function Home() {
+  const router = useRouter();
+
+  const handleLogin = (role: "admin" | "viewer") => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("nihal-rag-role", role);
+    }
+    if (role === "admin") {
+      router.push("/admin");
+    } else {
+      router.push("/chat");
+    }
+  };
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className={styles.container}>
+      {/* Background glow effects */}
+      <div className={styles.bgGlow1} />
+      <div className={styles.bgGlow2} />
+
+      <div className={styles.content}>
+        <div className={styles.logo}>
+          <div className={styles.logoIcon}>N</div>
         </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        <h1 className={styles.title}>
+          Nihal <span className={styles.titleAccent}>RAG Bot</span>
+        </h1>
+
+        <p className={styles.subtitle}>
+          Personal AI assistant powered by your documents.
+          <br />
+          Ask anything — get intelligent, context-aware answers.
+        </p>
+
+        <div className={styles.cards}>
+          <button
+            className={styles.card}
+            onClick={() => handleLogin("admin")}
           >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            <div className={styles.cardIcon}>⚙️</div>
+            <h2 className={styles.cardTitle}>Login as Admin</h2>
+            <p className={styles.cardDesc}>
+              Upload documents, manage data, and configure the RAG pipeline
+            </p>
+            <span className={styles.cardArrow}>→</span>
+          </button>
+
+          <button
+            className={styles.card}
+            onClick={() => handleLogin("viewer")}
           >
-            Documentation
-          </a>
+            <div className={styles.cardIcon}>💬</div>
+            <h2 className={styles.cardTitle}>Login as Viewer</h2>
+            <p className={styles.cardDesc}>
+              Chat with the AI and ask questions about Nihal
+            </p>
+            <span className={styles.cardArrow}>→</span>
+          </button>
         </div>
-      </main>
+
+        <p className={styles.footer}>
+          POWERED BY NIHAL PERSONAL RAG ENGINE
+        </p>
+      </div>
     </div>
   );
 }
