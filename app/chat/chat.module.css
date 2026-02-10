@@ -229,8 +229,10 @@
     transition: border-color var(--transition-fast);
 }
 
+.inputWrapper:hover,
 .inputWrapper:focus-within {
-    border-color: var(--text-muted);
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
 }
 
 .textarea {
