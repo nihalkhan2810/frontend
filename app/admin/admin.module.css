@@ -178,69 +178,139 @@
 .docList {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
 }
 
 .docItem {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 16px;
+    padding: 16px 20px;
     background: var(--bg-secondary);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
     transition: all var(--transition-fast);
+    list-style: none;
 }
 
 .docItem:hover {
     background: var(--bg-card);
     border-color: var(--border-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .docInfo {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 16px;
+    flex: 1;
 }
 
 .docIcon {
     font-size: 20px;
+    color: var(--text-accent);
+    display: flex;
+    align-items: center;
 }
 
 .docName {
     display: block;
     font-size: 14px;
     font-weight: 500;
+    color: var(--text-primary);
+    word-break: break-all;
 }
 
 .docSize {
     display: block;
     font-size: 12px;
     color: var(--text-muted);
+    margin-left: 8px;
 }
 
-/* ── Ingest Section ────────────────────────────────────────────────── */
-.ingestSection {
-    text-align: center;
-    margin-bottom: 24px;
+.deleteBtn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.deleteBtn:hover {
+    color: var(--accent-red);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* ── Actions ────────────────────────────────────────────────────────── */
+.actions {
+    display: flex;
+    gap: 16px;
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-subtle);
 }
 
 .ingestBtn {
-    padding: 14px 36px;
+    flex: 2;
+    background: var(--accent-blue);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 14px 24px;
     font-size: 15px;
     font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
-.ingestHint {
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-top: 12px;
+.ingestBtn:hover:not(:disabled) {
+    background: var(--accent-blue-hover);
+    box-shadow: 0 0 20px var(--accent-blue-glow);
+    transform: translateY(-2px);
+}
+
+.ingestBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.chatBtn {
+    flex: 1;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 14px 24px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.chatBtn:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--text-secondary);
+    transform: translateY(-2px);
 }
 
 .spinner {
     display: inline-block;
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     border: 2px solid rgba(255, 255, 255, 0.3);
     border-top-color: white;
     border-radius: 50%;
@@ -251,10 +321,4 @@
     to {
         transform: rotate(360deg);
     }
-}
-
-/* ── Chat Link ─────────────────────────────────────────────────────── */
-.chatLink {
-    text-align: center;
-    animation: fadeIn 0.5s ease-out;
 }
