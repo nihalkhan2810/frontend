@@ -19,8 +19,7 @@ export default function ChatPage() {
         {
             id: "welcome",
             role: "bot",
-            content:
-                "Welcome to Nihal. I've successfully connected to your data sources. How can I assist you with your personalized information today?",
+            content: "Hey, I'm Nihal. I've connected to my data sources—how can I help you today?",
         },
     ]);
     const [input, setInput] = useState("");
@@ -76,6 +75,8 @@ export default function ChatPage() {
         }
 
         setLoading(false);
+        // Focus back on textarea
+        setTimeout(() => textareaRef.current?.focus(), 0);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
