@@ -55,7 +55,10 @@ export default function ChatPage() {
         setLoading(true);
 
         try {
-            const res = await sendChat(userMsg.content, tone.toLowerCase().replace(" ", ""));
+            // Prepare history for API (excluding the current user message and welcome message if desired)
+            const history = messages.map(m => ({ role: m.role, content: m.content }));
+
+            const res = await sendChat(userMsg.content, tone.toLowerCase().replace(" ", ""), history);
             const botMsg: Message = {
                 id: (Date.now() + 1).toString(),
                 role: "bot",

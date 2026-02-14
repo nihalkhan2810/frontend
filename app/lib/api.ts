@@ -73,12 +73,13 @@ export async function triggerIngest(): Promise<IngestResponse> {
 // ── Send a chat message ──────────────────────────────────────────────
 export async function sendChat(
     question: string,
-    tone: string
+    tone: string,
+    history: { role: "user" | "bot"; content: string }[] = []
 ): Promise<ChatResponse> {
     const res = await fetch(`${API_BASE}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question, tone }),
+        body: JSON.stringify({ question, tone, history }),
     });
     if (!res.ok) {
         const err = await res.json();
