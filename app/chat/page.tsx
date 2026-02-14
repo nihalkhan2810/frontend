@@ -42,6 +42,13 @@ export default function ChatPage() {
         }
     }, [input]);
 
+    // ── Persistence: Focus on input after loading ────────────────────
+    useEffect(() => {
+        if (!loading) {
+            textareaRef.current?.focus();
+        }
+    }, [loading]);
+
     const handleSend = async () => {
         if (!input.trim() || loading) return;
 
@@ -51,34 +58,97 @@ export default function ChatPage() {
             content: input.trim(),
         };
 
-        setMessages((prev) => [...prev, userMsg]);
+        const botMsgPlaceholder: Message = {
+            id: (Date.now() + 1).toString(),
+            role: "bot",
+            content: "",
+            sources: [],
+        };
+
+        setMessages((prev) => [...prev, userMsg, botMsgPlaceholder]);
         setInput("");
         setLoading(true);
 
         try {
-            // Prepare history for API (excluding the current user message and welcome message if desired)
-            const history = messages.map(m => ({ role: m.role, content: m.content }));
+            const history = messages
+                .filter(m => m.id !== "welcome")
+                .map(m => ({ role: m.role, content: m.content }));
 
-            const res = await sendChat(userMsg.content, tone.toLowerCase().replace(" ", ""), history);
-            const botMsg: Message = {
-                id: (Date.now() + 1).toString(),
-                role: "bot",
-                content: res.answer,
-                sources: res.sources,
-            };
-            setMessages((prev) => [...prev, botMsg]);
-        } catch (err) {
-            const errorMsg: Message = {
-                id: (Date.now() + 1).toString(),
-                role: "bot",
-                content: `Sorry, I encountered an error: ${err instanceof Error ? err.message : "Unknown error"}. Make sure the backend is running and documents are ingested.`,
-            };
-            setMessages((prev) => [...prev, errorMsg]);
+            const response = await fetch("http://localhost:8000/api/chat/stream", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    question: userMsg.content,
+                    tone: tone,
+                    history: history
+                }),
+            });
+
+            if (!response.ok) throw new Error("Streaming request failed");
+
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+            let accumulatedAnswer = "";
+            let finalSources: string[] = [];
+
+            if (reader) {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split("\n");
+
+                    for (const line of lines) {
+                        if (line.startsWith("data: ")) {
+                            const dataStr = line.slice(6).trim();
+                            if (dataStr === "[DONE]") break;
+
+                            try {
+                                const data = JSON.parse(dataStr);
+                                if (data.answer) {
+                                    accumulatedAnswer += data.answer;
+                                }
+                                if (data.sources) {
+                                    finalSources = data.sources;
+                                }
+
+                                // Update the placeholder message in real-time
+                                setMessages((prev) => {
+                                    const newMsgs = [...prev];
+                                    const index = newMsgs.findIndex(m => m.id === botMsgPlaceholder.id);
+                                    if (index !== -1) {
+                                        newMsgs[index] = {
+                                            ...newMsgs[index],
+                                            content: accumulatedAnswer,
+                                            sources: finalSources,
+                                        };
+                                    }
+                                    return newMsgs;
+                                });
+                            } catch (e) {
+                                // Bit of a dirty chunk, ignore or log
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Streaming error:", error);
+            setMessages((prev) => {
+                const newMsgs = [...prev];
+                const index = newMsgs.findIndex(m => m.id === botMsgPlaceholder.id);
+                if (index !== -1) {
+                    newMsgs[index] = {
+                        ...newMsgs[index],
+                        content: "Sorry, I encountered an error while processing your request.",
+                    };
+                }
+                return newMsgs;
+            });
         }
 
         setLoading(false);
-        // Focus back on textarea
-        setTimeout(() => textareaRef.current?.focus(), 0);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
