@@ -198,25 +198,33 @@ export default function ChatPage() {
                             >
                                 {msg.role === "bot" ? (
                                     <div className={styles.botContent}>
-                                        <ReactMarkdown
-                                            remarkPlugins={[remarkGfm]}
-                                            components={{
-                                                h1: ({ ...props }) => <h1 className={styles.mdH} {...props} />,
-                                                h2: ({ ...props }) => <h2 className={styles.mdH} {...props} />,
-                                                h3: ({ ...props }) => <h3 className={styles.mdH} {...props} />,
-                                                p: ({ ...props }) => <p className={styles.mdP} {...props} />,
-                                                ul: ({ ...props }) => <ul className={styles.mdUl} {...props} />,
-                                                ol: ({ ...props }) => <ol className={styles.mdOl} {...props} />,
-                                                li: ({ ...props }) => <li className={styles.mdLi} {...props} />,
-                                                code: ({ node, ...props }) => (
-                                                    <pre className={styles.codeBlock}>
-                                                        <code {...props} />
-                                                    </pre>
-                                                ),
-                                            }}
-                                        >
-                                            {msg.content}
-                                        </ReactMarkdown>
+                                        {msg.content === "" ? (
+                                            <div className={styles.typing}>
+                                                <span></span>
+                                                <span></span>
+                                                <span></span>
+                                            </div>
+                                        ) : (
+                                            <ReactMarkdown
+                                                remarkPlugins={[remarkGfm]}
+                                                components={{
+                                                    h1: ({ ...props }) => <h1 className={styles.mdH} {...props} />,
+                                                    h2: ({ ...props }) => <h2 className={styles.mdH} {...props} />,
+                                                    h3: ({ ...props }) => <h3 className={styles.mdH} {...props} />,
+                                                    p: ({ ...props }) => <p className={styles.mdP} {...props} />,
+                                                    ul: ({ ...props }) => <ul className={styles.mdUl} {...props} />,
+                                                    ol: ({ ...props }) => <ol className={styles.mdOl} {...props} />,
+                                                    li: ({ ...props }) => <li className={styles.mdLi} {...props} />,
+                                                    code: ({ node, ...props }) => (
+                                                        <pre className={styles.codeBlock}>
+                                                            <code {...props} />
+                                                        </pre>
+                                                    ),
+                                                }}
+                                            >
+                                                {msg.content}
+                                            </ReactMarkdown>
+                                        )}
                                     </div>
                                 ) : (
                                     <p>{msg.content}</p>
@@ -229,27 +237,6 @@ export default function ChatPage() {
                             </div>
                         </div>
                     ))}
-
-                    {loading && (
-                        <div className={`${styles.message} ${styles.botMessage}`}>
-                            <div className={styles.botAvatar}>
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M12 2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"></path>
-                                    <path d="M12 22a2 2 0 0 1 2-2v-2a2 2 0 0 1-2-2 2 2 0 0 1-2 2v2a2 2 0 0 1 2 2z"></path>
-                                    <path d="M22 12a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2 2 2 0 0 1 2-2h2a2 2 0 0 1 2 2z"></path>
-                                    <path d="M2 12a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2 2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"></path>
-                                    <rect x="7" y="7" width="10" height="10" rx="3"></rect>
-                                </svg>
-                            </div>
-                            <div className={styles.botBubble}>
-                                <div className={styles.typing}>
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </div>
             </div>
 
