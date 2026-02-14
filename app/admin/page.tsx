@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "../components/Navbar";
 import {
-    uploadFile,
+    uploadFiles,
     triggerIngest,
     getDocuments,
     deleteDocument,
@@ -14,6 +14,7 @@ import styles from "./admin.module.css";
 
 export default function AdminPage() {
     const [documents, setDocuments] = useState<DocumentItem[]>([]);
+    const [pendingFiles, setPendingFiles] = useState<File[]>([]);
     const [hasEmbeddings, setHasEmbeddings] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [ingesting, setIngesting] = useState(false);
@@ -22,6 +23,7 @@ export default function AdminPage() {
     const [statusType, setStatusType] = useState<"success" | "error" | "info">("info");
 
     const router = useRouter();
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const fetchDocuments = useCallback(async () => {
         try {
@@ -38,24 +40,40 @@ export default function AdminPage() {
         fetchDocuments();
     }, [fetchDocuments]);
 
-    const handleFiles = async (files: FileList | File[]) => {
-        setUploading(true);
-        setStatusMessage("");
+    const handleFiles = (files: FileList | File[]) => {
         const fileArray = Array.from(files);
+        setPendingFiles((prev) => [...prev, ...fileArray]);
+        setStatusMessage("");
+    };
 
-        for (const file of fileArray) {
-            try {
-                const res = await uploadFile(file);
+    const removePendingFile = (index: number) => {
+        setPendingFiles((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const handleUploadAll = async () => {
+        if (pendingFiles.length === 0) return;
+
+        setUploading(true);
+        setStatusMessage("Uploading files...");
+        setStatusType("info");
+
+        try {
+            const res = await uploadFiles(pendingFiles);
+            if (res.errors.length > 0) {
+                setStatusMessage(`Uploaded with issues: ${res.errors.join(", ")}`);
+                setStatusType("error");
+            } else {
                 setStatusMessage(res.message);
                 setStatusType("success");
-            } catch (err) {
-                setStatusMessage(`Failed to upload ${file.name}: ${err instanceof Error ? err.message : "Unknown error"}`);
-                setStatusType("error");
+                setPendingFiles([]);
             }
+            fetchDocuments();
+        } catch (err) {
+            setStatusMessage(`Upload failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+            setStatusType("error");
+        } finally {
+            setUploading(false);
         }
-
-        setUploading(false);
-        fetchDocuments();
     };
 
     const handleDrag = (e: React.DragEvent) => {
@@ -147,7 +165,7 @@ export default function AdminPage() {
                     onDragLeave={handleDrag}
                     onDragOver={handleDrag}
                     onDrop={handleDrop}
-                    onClick={() => document.getElementById("fileInput")?.click()}
+                    onClick={() => fileInputRef.current?.click()}
                 >
                     <div className={styles.uploadIcon}>
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -158,20 +176,76 @@ export default function AdminPage() {
                     </div>
                     <p>Drag & drop files here, or click to select</p>
                     <span className={styles.subtext}>Supports PDF, TXT, MD (Max 70KB total)</span>
-                    <input
-                        id="fileInput"
-                        type="file"
-                        multiple
-                        accept=".pdf,.txt,.md,.markdown"
-                        onChange={handleFileSelect}
-                        className={styles.hiddenInput}
-                    />
                 </div>
+
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept=".pdf,.txt,.md,.markdown"
+                    onChange={handleFileSelect}
+                    className={styles.hiddenInput}
+                />
 
                 {/* ── Status Message ─────────────────────────────────── */}
                 {statusMessage && (
                     <div className={`${styles.status} ${styles[statusType]}`}>
                         {statusMessage}
+                    </div>
+                )}
+
+                {/* ── Pending Files ─────────────────────────────────── */}
+                {pendingFiles.length > 0 && (
+                    <div className={styles.section}>
+                        <div className={styles.sectionHeader}>
+                            <h2 className={styles.sectionTitle}>
+                                Pending Files
+                                <span className={styles.count}>{pendingFiles.length}</span>
+                            </h2>
+                            <button
+                                className={styles.uploadBtn}
+                                onClick={handleUploadAll}
+                                disabled={uploading}
+                            >
+                                {uploading ? (
+                                    <>
+                                        <span className={styles.spinner}></span> Uploading...
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <polyline points="17 8 12 3 7 8"></polyline>
+                                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                                        </svg>
+                                        Upload Selected Files
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                        <div className={styles.docList}>
+                            {pendingFiles.map((file, idx) => (
+                                <div key={`${file.name}-${idx}`} className={styles.docItem}>
+                                    <div className={styles.docInfo}>
+                                        <span className={styles.docIcon}>📄</span>
+                                        <span className={styles.docName}>{file.name}</span>
+                                        <span className={styles.docSize}>
+                                            {(file.size / 1024).toFixed(1)} KB
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={() => removePendingFile(idx)}
+                                        className={styles.deleteBtn}
+                                        title="Remove"
+                                    >
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                                        </svg>
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
 

@@ -37,10 +37,16 @@ export interface StatusResponse {
     openai_api_key_set: boolean;
 }
 
-// ── Upload a file ────────────────────────────────────────────────────
-export async function uploadFile(file: File): Promise<UploadResponse> {
+// ── Upload multiple files ───────────────────────────────────────────
+export async function uploadFiles(files: File[]): Promise<{
+    uploaded: { filename: string; size: number }[];
+    errors: string[];
+    message: string;
+}> {
     const formData = new FormData();
-    formData.append("file", file);
+    files.forEach((file) => {
+        formData.append("files", file);
+    });
 
     const res = await fetch(`${API_BASE}/api/upload`, {
         method: "POST",
