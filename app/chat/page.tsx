@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import { sendChat } from "../lib/api";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import styles from "./chat.module.css";
 
 interface Message {
@@ -86,51 +88,6 @@ export default function ChatPage() {
         }
     };
 
-    // Simple markdown-like rendering
-    const renderContent = (content: string) => {
-        // Split by code blocks first
-        const parts = content.split(/(```[\s\S]*?```)/g);
-        return parts.map((part, i) => {
-            if (part.startsWith("```") && part.endsWith("```")) {
-                const code = part.slice(3, -3).replace(/^\w+\n/, "");
-                return (
-                    <pre key={i} className={styles.codeBlock}>
-                        <code>{code}</code>
-                    </pre>
-                );
-            }
-
-            // Process inline formatting
-            const lines = part.split("\n");
-            return lines.map((line, j) => {
-                // Headers
-                if (line.startsWith("### ")) return <h4 key={`${i}-${j}`} className={styles.mdH}>{line.slice(4)}</h4>;
-                if (line.startsWith("## ")) return <h3 key={`${i}-${j}`} className={styles.mdH}>{line.slice(3)}</h3>;
-                if (line.startsWith("# ")) return <h2 key={`${i}-${j}`} className={styles.mdH}>{line.slice(2)}</h2>;
-
-                // Bullet points
-                if (line.match(/^[-*•]\s/)) {
-                    return <li key={`${i}-${j}`} className={styles.mdLi}>{line.slice(2)}</li>;
-                }
-
-                // Bold
-                const boldProcessed = line.replace(
-                    /\*\*(.*?)\*\*/g,
-                    '<strong>$1</strong>'
-                );
-
-                if (line.trim() === "") return <br key={`${i}-${j}`} />;
-
-                return (
-                    <p
-                        key={`${i}-${j}`}
-                        className={styles.mdP}
-                        dangerouslySetInnerHTML={{ __html: boldProcessed }}
-                    />
-                );
-            });
-        });
-    };
 
     return (
         <div className={styles.page}>
@@ -170,7 +127,27 @@ export default function ChatPage() {
                                 }
                             >
                                 {msg.role === "bot" ? (
-                                    <div className={styles.botContent}>{renderContent(msg.content)}</div>
+                                    <div className={styles.botContent}>
+                                        <ReactMarkdown
+                                            remarkPlugins={[remarkGfm]}
+                                            components={{
+                                                h1: ({ ...props }) => <h1 className={styles.mdH} {...props} />,
+                                                h2: ({ ...props }) => <h2 className={styles.mdH} {...props} />,
+                                                h3: ({ ...props }) => <h3 className={styles.mdH} {...props} />,
+                                                p: ({ ...props }) => <p className={styles.mdP} {...props} />,
+                                                ul: ({ ...props }) => <ul className={styles.mdUl} {...props} />,
+                                                ol: ({ ...props }) => <ol className={styles.mdOl} {...props} />,
+                                                li: ({ ...props }) => <li className={styles.mdLi} {...props} />,
+                                                code: ({ node, ...props }) => (
+                                                    <pre className={styles.codeBlock}>
+                                                        <code {...props} />
+                                                    </pre>
+                                                ),
+                                            }}
+                                        >
+                                            {msg.content}
+                                        </ReactMarkdown>
+                                    </div>
                                 ) : (
                                     <p>{msg.content}</p>
                                 )}
