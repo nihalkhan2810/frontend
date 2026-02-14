@@ -25,7 +25,7 @@ export default function ChatPage() {
         },
     ]);
     const [input, setInput] = useState("");
-    const [tone, setTone] = useState<string>("Conversational");
+    const [tone, setTone] = useState<string>("Casual");
     const [loading, setLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
