@@ -237,6 +237,7 @@ export default function ChatPage() {
                             </div>
                         </div>
                     ))}
+                    <div ref={messagesEndRef} />
                 </div>
             </div>
 
