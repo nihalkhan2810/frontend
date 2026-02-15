@@ -38,9 +38,11 @@ export default function Home() {
         </h1>
 
         <p className={styles.subtitle}>
-          Personal AI assistant powered by your documents.
+          <span className={styles.subtitleLine}>Personal AI assistant powered by your documents.</span>
           <br />
-          Ask anything — get intelligent, context-aware answers.
+          <span className={styles.subtitleLine}>
+            Ask anything <span className={styles.dot}>•</span> Get intelligent, context-aware answers.
+          </span>
         </p>
 
         <div className={styles.cards}>

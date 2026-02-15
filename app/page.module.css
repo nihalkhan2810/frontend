@@ -92,10 +92,32 @@
 }
 
 .subtitle {
-  font-size: 16px;
+  font-size: 17px;
   color: var(--text-secondary);
-  line-height: 1.7;
+  line-height: 1.8;
   margin-bottom: 48px;
+  font-weight: 450;
+}
+
+.subtitleLine {
+  display: inline-block;
+  opacity: 0;
+  animation: fadeIn 0.8s ease-out forwards;
+}
+
+.subtitleLine:nth-child(1) {
+  animation-delay: 1.2s;
+}
+
+.subtitleLine:nth-child(3) {
+  animation-delay: 1.4s;
+}
+
+.dot {
+  color: var(--accent-blue);
+  margin: 0 8px;
+  font-weight: 700;
+  display: inline-block;
 }
 
 /* ── Role Cards ────────────────────────────────────────────────────── */
