@@ -22,6 +22,11 @@ export default function AdminPage() {
     const [statusMessage, setStatusMessage] = useState("");
     const [statusType, setStatusType] = useState<"success" | "error" | "info">("info");
 
+    // Auth state
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [password, setPassword] = useState("");
+    const [authError, setAuthError] = useState("");
+
     const router = useRouter();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -37,8 +42,61 @@ export default function AdminPage() {
     }, []);
 
     useEffect(() => {
-        fetchDocuments();
-    }, [fetchDocuments]);
+        const auth = sessionStorage.getItem("nihal-admin-auth");
+        if (auth === "true") {
+            setIsAuthenticated(true);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            fetchDocuments();
+        }
+    }, [fetchDocuments, isAuthenticated]);
+
+    const handleLogin = (e: React.FormEvent) => {
+        e.preventDefault();
+        // For now using a hardcoded password, can be moved to env later
+        if (password === "nihal-admin") {
+            setIsAuthenticated(true);
+            sessionStorage.setItem("nihal-admin-auth", "true");
+            setAuthError("");
+        } else {
+            setAuthError("Invalid password. Please try again.");
+        }
+    };
+
+    if (!isAuthenticated) {
+        return (
+            <div className={styles.page}>
+                <Navbar showBack />
+                <main className={styles.loginContainer}>
+                    <div className={styles.loginCard}>
+                        <h1 className={styles.loginTitle}>Admin Access</h1>
+                        <p className={styles.loginSubtitle}>Please enter the administrator password to continue.</p>
+
+                        <form onSubmit={handleLogin} className={styles.loginForm}>
+                            <input
+                                type="password"
+                                placeholder="Enter password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className={styles.passwordInput}
+                                autoFocus
+                            />
+                            <button type="submit" className={styles.loginSubmit}>
+                                Login
+                            </button>
+                        </form>
+
+                        {authError && (
+                            <p className={styles.loginErrorMessage}>{authError}</p>
+                        )}
+                    </div>
+                </main>
+            </div>
+        );
+    }
 
     const handleFiles = (files: FileList | File[]) => {
         const fileArray = Array.from(files);
