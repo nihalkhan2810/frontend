@@ -16,6 +16,13 @@ interface Message {
 
 const TONES = ["Corporate", "Conversational", "Casual", "Gen Z"] as const;
 
+const SUGGESTIONS = [
+    { text: "Tell me about your experience?" },
+    { text: "What are your core skills?" },
+    { text: "Tell me about your current role?" },
+    { text: "What projects have you worked on?" }
+];
+
 export default function ChatPage() {
     const [messages, setMessages] = useState<Message[]>([
         {
@@ -49,13 +56,14 @@ export default function ChatPage() {
         }
     }, [loading]);
 
-    const handleSend = async () => {
-        if (!input.trim() || loading) return;
+    const handleSend = async (overrideInput?: string) => {
+        const textToSend = overrideInput ?? input;
+        if (!textToSend.trim() || loading) return;
 
         const userMsg: Message = {
             id: Date.now().toString(),
             role: "user",
-            content: input.trim(),
+            content: textToSend.trim(),
         };
 
         const botMsgPlaceholder: Message = {
@@ -151,6 +159,10 @@ export default function ChatPage() {
         setLoading(false);
     };
 
+    const handleSuggestionClick = (text: string) => {
+        handleSend(text);
+    };
+
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
@@ -168,7 +180,7 @@ export default function ChatPage() {
                 {messages.length <= 1 && (
                     <div className={styles.hero}>
                         <h1 className={styles.heroTitle}>
-                            Hi there, <span className={styles.heroAccent}>how can I help today?</span>
+                            Hey, I'm Nihal. How can I help you today?
                         </h1>
                     </div>
                 )}
@@ -244,6 +256,22 @@ export default function ChatPage() {
             {/* ── Input Area ────────────────────────────────────────── */}
             <div className={styles.inputArea}>
                 <div className={styles.inputContainer}>
+                    {/* Floating Suggestions */}
+                    {messages.length <= 1 && (
+                        <div className={styles.suggestionsFloating}>
+                            {SUGGESTIONS.map((suggestion) => (
+                                <button
+                                    key={suggestion.text}
+                                    className={styles.suggestionPill}
+                                    onClick={() => handleSuggestionClick(suggestion.text)}
+                                    disabled={loading}
+                                >
+                                    {suggestion.text}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
                     <div className={styles.inputWrapper}>
                         <textarea
                             ref={textareaRef}
@@ -258,7 +286,7 @@ export default function ChatPage() {
                         <div className={styles.inputActions}>
                             <button
                                 className={styles.sendBtn}
-                                onClick={handleSend}
+                                onClick={() => handleSend()}
                                 disabled={!input.trim() || loading}
                             >
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
