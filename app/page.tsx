@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
+import AnimatedTitle from "./components/AnimatedTitle";
 
 export default function Home() {
   const router = useRouter();
@@ -29,7 +30,11 @@ export default function Home() {
         </div>
 
         <h1 className={styles.title}>
-          Nihal <span className={styles.titleAccent}>RAG Bot</span>
+          <AnimatedTitle
+            initialText="AI RAG"
+            targetText="Nihal"
+          />{" "}
+          <span className={styles.titleAccent}>Bot</span>
         </h1>
 
         <p className={styles.subtitle}>
