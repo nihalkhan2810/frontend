@@ -57,7 +57,7 @@ export default function AdminPage() {
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
         // For now using a hardcoded password, can be moved to env later
-        if (password === "nihal-admin") {
+        if (password === "Bluerock28#") {
             setIsAuthenticated(true);
             sessionStorage.setItem("nihal-admin-auth", "true");
             setAuthError("");
