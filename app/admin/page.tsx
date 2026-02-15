@@ -9,6 +9,8 @@ import {
     getDocuments,
     deleteDocument,
     type DocumentItem,
+    getPipelineDetails,
+    type PipelineDetailsResponse,
 } from "../lib/api";
 import styles from "./admin.module.css";
 
@@ -27,6 +29,9 @@ export default function AdminPage() {
     const [password, setPassword] = useState("");
     const [authError, setAuthError] = useState("");
 
+    // Pipeline details
+    const [pipelineDetails, setPipelineDetails] = useState<PipelineDetailsResponse | null>(null);
+
     const router = useRouter();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -41,6 +46,15 @@ export default function AdminPage() {
         }
     }, []);
 
+    const fetchPipelineDetails = useCallback(async () => {
+        try {
+            const data = await getPipelineDetails();
+            setPipelineDetails(data);
+        } catch (error) {
+            console.error("Failed to fetch pipeline details:", error);
+        }
+    }, []);
+
     useEffect(() => {
         const auth = sessionStorage.getItem("nihal-admin-auth");
         if (auth === "true") {
@@ -51,8 +65,9 @@ export default function AdminPage() {
     useEffect(() => {
         if (isAuthenticated) {
             fetchDocuments();
+            fetchPipelineDetails();
         }
-    }, [fetchDocuments, isAuthenticated]);
+    }, [fetchDocuments, fetchPipelineDetails, isAuthenticated]);
 
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
@@ -173,34 +188,20 @@ export default function AdminPage() {
 
     const handleIngest = async () => {
         setIngesting(true);
-        setStatusMessage("Processing documents... This may take a moment.");
+        setStatusMessage("Ingesting documents into the vector store...");
         setStatusType("info");
-
         try {
-            const res = await triggerIngest();
-            setStatusMessage(res.message);
-            setStatusType(res.status === "success" ? "success" : "error");
-            fetchDocuments();
-        } catch (err) {
-            setStatusMessage(`Ingestion failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+            const result = await triggerIngest();
+            setStatusMessage(result.message);
+            setStatusType("success");
+            setHasEmbeddings(true);
+            fetchPipelineDetails(); // Refresh blueprint stats
+            fetchDocuments(); // Refresh doc list
+        } catch (error: any) {
+            setStatusMessage(error.message);
             setStatusType("error");
-        }
-
-        setIngesting(false);
-    };
-
-    const formatSize = (bytes: number) => {
-        if (bytes < 1024) return `${bytes} B`;
-        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-    };
-
-    const getFileIcon = (ext: string) => {
-        switch (ext) {
-            case ".pdf": return "📄";
-            case ".md":
-            case ".markdown": return "📝";
-            default: return "📃";
+        } finally {
+            setIngesting(false);
         }
     };
 
@@ -210,192 +211,306 @@ export default function AdminPage() {
 
             <main className={styles.main}>
                 <div className={styles.header}>
-                    <h1 className={styles.title}>Admin Panel</h1>
-                    <p className={styles.subtitle}>
-                        Upload your documents and process them for the RAG pipeline
-                    </p>
-                </div>
-
-                {/* ── Upload Area ────────────────────────────────────── */}
-                <div
-                    className={`${styles.dropZone} ${dragActive ? styles.active : ""}`}
-                    onDragEnter={handleDrag}
-                    onDragLeave={handleDrag}
-                    onDragOver={handleDrag}
-                    onDrop={handleDrop}
-                    onClick={() => fileInputRef.current?.click()}
-                >
-                    <div className={styles.uploadIcon}>
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="17 8 12 3 7 8"></polyline>
-                            <line x1="12" y1="3" x2="12" y2="15"></line>
-                        </svg>
+                    <div>
+                        <h1 className={styles.title}>Admin Dashboard</h1>
+                        <p className={styles.subtitle}>Manage your knowledge base and pipeline settings.</p>
                     </div>
-                    <p>Drag & drop files here, or click to select</p>
-                    <span className={styles.subtext}>Supports PDF, TXT, MD (Max 70KB total)</span>
                 </div>
 
-                <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    accept=".pdf,.txt,.md,.markdown"
-                    onChange={handleFileSelect}
-                    className={styles.hiddenInput}
-                />
-
-                {/* ── Status Message ─────────────────────────────────── */}
                 {statusMessage && (
                     <div className={`${styles.status} ${styles[statusType]}`}>
-                        {statusMessage}
+                        <div className={styles.statusIcon}>
+                            {statusType === "success" && "✓"}
+                            {statusType === "error" && "⚠"}
+                            {statusType === "info" && "ℹ"}
+                        </div>
+                        <p>{statusMessage}</p>
                     </div>
                 )}
 
-                {/* ── Pending Files ─────────────────────────────────── */}
-                {pendingFiles.length > 0 && (
+                <div className={styles.grid}>
+                    {/* ── Document Management ── */}
                     <div className={styles.section}>
                         <div className={styles.sectionHeader}>
-                            <h2 className={styles.sectionTitle}>
-                                Pending Files
-                                <span className={styles.count}>{pendingFiles.length}</span>
-                            </h2>
-                            <button
-                                className={styles.uploadBtn}
-                                onClick={handleUploadAll}
-                                disabled={uploading}
-                            >
-                                {uploading ? (
-                                    <>
-                                        <span className={styles.spinner}></span> Uploading...
-                                    </>
-                                ) : (
-                                    <>
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                            <polyline points="17 8 12 3 7 8"></polyline>
-                                            <line x1="12" y1="3" x2="12" y2="15"></line>
-                                        </svg>
-                                        Upload Selected Files
-                                    </>
-                                )}
-                            </button>
+                            <h2 className={styles.sectionTitle}>Knowledge Base</h2>
+                            <span className={styles.badge}>{documents.length} Files</span>
                         </div>
-                        <div className={styles.docList}>
-                            {pendingFiles.map((file, idx) => (
-                                <div key={`${file.name}-${idx}`} className={styles.docItem}>
-                                    <div className={styles.docInfo}>
-                                        <span className={styles.docIcon}>📄</span>
-                                        <span className={styles.docName}>{file.name}</span>
-                                        <span className={styles.docSize}>
-                                            {(file.size / 1024).toFixed(1)} KB
-                                        </span>
+
+                        <div
+                            className={`${styles.dropzone} ${dragActive ? styles.dropzoneActive : ""}`}
+                            onDragEnter={handleDrag}
+                            onDragLeave={handleDrag}
+                            onDragOver={handleDrag}
+                            onDrop={handleDrop}
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={(e) => e.target.files && handleFiles(e.target.files)}
+                                multiple
+                                style={{ display: "none" }}
+                            />
+                            <div className={styles.dropzoneIcon}>
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                            </div>
+                            <p>Click or drag documents here to upload</p>
+                            <span className={styles.supportText}>Supports PDF, TXT, MD</span>
+                        </div>
+
+                        {pendingFiles.length > 0 && (
+                            <div className={styles.pendingList}>
+                                {pendingFiles.map((file, idx) => (
+                                    <div key={idx} className={styles.pendingItem}>
+                                        <div className={styles.fileInfo}>
+                                            <span className={styles.docName}>{file.name}</span>
+                                            <span className={styles.docSize}>({(file.size / 1024).toFixed(1)} KB)</span>
+                                        </div>
+                                        <button
+                                            className={styles.removeBtn}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setPendingFiles(prev => prev.filter((_, i) => i !== idx));
+                                            }}
+                                        >
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                <line x1="18" y1="6" x2="6" y2="18" />
+                                                <line x1="6" y1="6" x2="18" y2="18" />
+                                            </svg>
+                                        </button>
                                     </div>
-                                    <button
-                                        onClick={() => removePendingFile(idx)}
-                                        className={styles.deleteBtn}
-                                        title="Remove"
-                                    >
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                                        </svg>
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                                ))}
+                                <button
+                                    className={styles.uploadBtn}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleUploadAll();
+                                    }}
+                                    disabled={uploading}
+                                >
+                                    {uploading ? "Uploading..." : "Confirm Uploads"}
+                                </button>
+                            </div>
+                        )}
 
-                {/* ── Documents List ─────────────────────────────────── */}
-                <div className={styles.section}>
-                    <div className={styles.sectionHeader}>
-                        <h2 className={styles.sectionTitle}>
-                            Uploaded Documents
-                            <span className={styles.count}>{documents.length}</span>
-                        </h2>
-
-                        <div className={styles.sectionActions}>
-                            {hasEmbeddings && (
-                                <span className={styles.badge}>✅ Embeddings Ready</span>
+                        <div className={styles.docList}>
+                            {documents.length === 0 ? (
+                                <p className={styles.empty}>No documents uploaded yet.</p>
+                            ) : (
+                                documents.map((doc) => (
+                                    <div key={doc.filename} className={styles.docItem}>
+                                        <div className={styles.docInfo}>
+                                            <div className={styles.docIcon}>
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+                                                    <polyline points="13 2 13 9 20 9" />
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <div className={styles.docName}>{doc.filename}</div>
+                                                <div className={styles.docMeta}>
+                                                    {(doc.size / 1024).toFixed(1)} KB • {doc.extension}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button
+                                            className={styles.deleteBtn}
+                                            onClick={() => handleDelete(doc.filename)}
+                                            title="Delete file"
+                                        >
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M3 6h18" />
+                                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                ))
                             )}
                         </div>
                     </div>
 
-                    {documents.length === 0 ? (
-                        <div className={styles.empty}>
-                            <p>No documents uploaded yet</p>
+                    {/* ── Pipeline Control ── */}
+                    <div className={styles.section}>
+                        <div className={styles.sectionHeader}>
+                            <h2 className={styles.sectionTitle}>Pipeline Control</h2>
                         </div>
-                    ) : (
-                        <div className={styles.docList}>
-                            {documents.map((doc) => (
-                                <li key={doc.filename} className={styles.docItem}>
-                                    <div className={styles.docIcon}>
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                            <polyline points="14 2 14 8 20 8"></polyline>
-                                            <line x1="16" y1="13" x2="8" y2="13"></line>
-                                            <line x1="16" y1="17" x2="8" y2="17"></line>
-                                            <polyline points="10 9 9 9 8 9"></polyline>
+
+                        <div className={styles.controlCard}>
+                            <div className={styles.controlHeader}>
+                                <div className={styles.pulseIcon} style={{ background: hasEmbeddings ? "#10b981" : "#f59e0b" }} />
+                                <div>
+                                    <div className={styles.controlTitle}>Vector Store Status</div>
+                                    <div className={styles.controlStatus}>
+                                        {hasEmbeddings ? "Ingested & Ready" : "Pending Ingestion"}
+                                    </div>
+                                </div>
+                            </div>
+                            <p className={styles.controlDesc}>
+                                Processing docs extracts text, creates semantic chunks, and calculates embeddings for retrieval.
+                            </p>
+                            <button
+                                className={styles.ingestBtn}
+                                onClick={handleIngest}
+                                disabled={ingesting || documents.length === 0}
+                            >
+                                {ingesting ? (
+                                    <>
+                                        <div className={styles.spinner} />
+                                        Processing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
+                                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                        </svg>
+                                        Process & Ingest
+                                    </>
+                                )}
+                            </button>
+
+                            <button
+                                className={styles.chatBtn}
+                                onClick={() => router.push("/chat")}
+                            >
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
+                                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                                </svg>
+                                Go to Chat
+                            </button>
+                        </div>
+
+                        <div className={styles.tipCard}>
+                            <h3>Admin Tip</h3>
+                            <p>Always re-ingest if you delete or add large volumes of data for optimal chat accuracy.</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── System Blueprints ── */}
+                {pipelineDetails && (
+                    <div className={styles.blueprintSection}>
+                        <div className={styles.sectionHeader}>
+                            <h2 className={styles.sectionTitle}>System Blueprints</h2>
+                            <span className={styles.blueprintTag}>Live Pipeline Data</span>
+                        </div>
+
+                        <div className={styles.blueprintGrid}>
+                            <div className={styles.blueprintCard}>
+                                <div className={styles.blueprintHeader}>
+                                    <div className={styles.blueprintIcon}>
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#3b82f6' }}>
+                                            <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" />
+                                            <rect x="9" y="9" width="6" height="6" rx="1" />
                                         </svg>
                                     </div>
-                                    <div className={styles.docInfo}>
-                                        <span className={styles.docName}>{doc.filename}</span>
-                                        <span className={styles.docSize}>
-                                            {(doc.size / 1024).toFixed(1)} KB
+                                    <h3 className={styles.blueprintName}>Chunking Logic</h3>
+                                </div>
+                                <div className={styles.blueprintBody}>
+                                    <div className={styles.statLine}>
+                                        <span className={styles.statLabel}>Strategy</span>
+                                        <span className={styles.statValue}>{pipelineDetails.chunking.strategy}</span>
+                                    </div>
+                                    <div className={styles.statLine}>
+                                        <span className={styles.statLabel}>Chunk Size</span>
+                                        <span className={styles.statValue}>{pipelineDetails.chunking.size} chars</span>
+                                    </div>
+                                    <div className={styles.statLine}>
+                                        <span className={styles.statLabel}>Overlap</span>
+                                        <span className={styles.statValue}>{pipelineDetails.chunking.overlap} chars</span>
+                                    </div>
+                                    <div className={styles.statDivider} />
+                                    <div className={styles.statLine}>
+                                        <span className={styles.statLabel}>Total Chunks</span>
+                                        <span className={`${styles.statValue} ${styles.highlight}`}>{pipelineDetails.chunking.total_chunks}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className={styles.blueprintCard}>
+                                <div className={styles.blueprintHeader}>
+                                    <div className={styles.blueprintIcon}>
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#ec4899' }}>
+                                            <path d="M12 2a10 10 0 1 0 10 10H12V2z" />
+                                            <path d="M12 12L2.1 14.9" />
+                                            <path d="M12 12L15 21.9" />
+                                            <circle cx="12" cy="12" r="2" />
+                                        </svg>
+                                    </div>
+                                    <h3 className={styles.blueprintName}>Intelligence</h3>
+                                </div>
+                                <div className={styles.blueprintBody}>
+                                    <div className={styles.statLine}>
+                                        <span className={styles.statLabel}>Embeddings</span>
+                                        <span className={styles.statValue}>{pipelineDetails.models.embeddings}</span>
+                                    </div>
+                                    <div className={styles.statLine}>
+                                        <span className={styles.statLabel}>LLM Engine</span>
+                                        <span className={styles.statValue}>{pipelineDetails.models.llm}</span>
+                                    </div>
+                                    <div className={styles.statLine}>
+                                        <span className={styles.statLabel}>Grounding</span>
+                                        <span className={styles.statValue}>Strict Document-Only</span>
+                                    </div>
+                                    <div className={styles.statDivider} />
+                                    <div className={styles.statLine}>
+                                        <span className={styles.statLabel}>Keys Status</span>
+                                        <span className={styles.statValue}>
+                                            <span className={pipelineDetails.status.openai_api_key ? styles.secure : styles.insecure} style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'flex-end' }}>
+                                                OpenAI: {pipelineDetails.status.openai_api_key ? (
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                                        <polyline points="20 6 9 17 4 12" />
+                                                    </svg>
+                                                ) : (
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                                        <line x1="18" y1="6" x2="6" y2="18" />
+                                                        <line x1="6" y1="6" x2="18" y2="18" />
+                                                    </svg>
+                                                )}
+                                            </span>
                                         </span>
                                     </div>
-                                    <button
-                                        onClick={() => handleDelete(doc.filename)}
-                                        className={styles.deleteBtn}
-                                        title="Delete"
-                                    >
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <polyline points="3 6 5 6 21 6"></polyline>
-                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                            <line x1="10" y1="11" x2="10" y2="17"></line>
-                                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                                </div>
+                            </div>
+
+                            <div className={styles.blueprintCard}>
+                                <div className={styles.blueprintHeader}>
+                                    <div className={styles.blueprintIcon}>
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#10b981' }}>
+                                            <rect x="2" y="2" width="20" height="8" rx="2" />
+                                            <rect x="2" y="14" width="20" height="8" rx="2" />
+                                            <line x1="6" y1="6" x2="6" y2="6" />
+                                            <line x1="6" y1="18" x2="6" y2="18" />
                                         </svg>
-                                    </button>
-                                </li>
-                            ))}
+                                    </div>
+                                    <h3 className={styles.blueprintName}>Infrastructure</h3>
+                                </div>
+                                <div className={styles.blueprintBody}>
+                                    <div className={styles.statLine}>
+                                        <span className={styles.statLabel}>Vector Store</span>
+                                        <span className={styles.statValue}>{pipelineDetails.database.type}</span>
+                                    </div>
+                                    <div className={styles.statLine}>
+                                        <span className={styles.statLabel}>Collection</span>
+                                        <span className={styles.statValue}>{pipelineDetails.database.collection_name}</span>
+                                    </div>
+                                    <div className={styles.statLine}>
+                                        <span className={styles.statLabel}>Persistence</span>
+                                        <span className={styles.statValue}>Local Persistence</span>
+                                    </div>
+                                    <div className={styles.statDivider} />
+                                    <div className={`${styles.statLine} ${styles.blueprintPath}`}>
+                                        <span>{pipelineDetails.database.persist_directory.split(/[\\/]/).pop()}</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    )}
-                </div>
-
-                {/* ── Ingest Button ──────────────────────────────────── */}
-                <div className={styles.actions}>
-                    <button
-                        className={styles.ingestBtn}
-                        onClick={handleIngest}
-                        disabled={ingesting || uploading || documents.length === 0}
-                    >
-                        {ingesting ? (
-                            <>
-                                <span className={styles.spinner}></span> Processing...
-                            </>
-                        ) : (
-                            <>
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
-                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                                </svg>
-                                Process & Ingest
-                            </>
-                        )}
-                    </button>
-
-                    <button
-                        className={styles.chatBtn}
-                        onClick={() => router.push("/chat")}
-                    >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
-                            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
-                        </svg>
-                        Go to Chat
-                    </button>
-                </div>
-
-
+                    </div>
+                )}
             </main>
         </div>
     );

@@ -37,6 +37,28 @@ export interface StatusResponse {
     openai_api_key_set: boolean;
 }
 
+export interface PipelineDetailsResponse {
+    chunking: {
+        strategy: string;
+        size: number;
+        overlap: number;
+        total_chunks: number;
+    };
+    models: {
+        embeddings: string;
+        llm: string;
+    };
+    database: {
+        type: string;
+        persist_directory: string;
+        collection_name: string;
+    };
+    status: {
+        openai_api_key: boolean;
+        openrouter_api_key: boolean;
+    };
+}
+
 // ── Upload multiple files ───────────────────────────────────────────
 export async function uploadFiles(files: File[]): Promise<{
     uploaded: { filename: string; size: number }[];
@@ -107,5 +129,12 @@ export async function deleteDocument(filename: string): Promise<void> {
 export async function getStatus(): Promise<StatusResponse> {
     const res = await fetch(`${API_BASE}/api/status`);
     if (!res.ok) throw new Error("Backend not reachable");
+    return res.json();
+}
+
+// ── Get Pipeline Details ─────────────────────────────────────────────
+export async function getPipelineDetails(): Promise<PipelineDetailsResponse> {
+    const res = await fetch(`${API_BASE}/api/pipeline/details`);
+    if (!res.ok) throw new Error("Failed to fetch pipeline details");
     return res.json();
 }

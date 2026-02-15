@@ -43,34 +43,37 @@
 }
 
 /* ── Drop Zone ─────────────────────────────────────────────────────── */
-.dropZone {
+.dropzone {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 48px 24px;
-    background: var(--bg-secondary);
-    border: 2px dashed var(--border-color);
+    padding: 60px 24px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 2px dashed rgba(255, 255, 255, 0.1);
     border-radius: var(--radius-lg);
     cursor: pointer;
     transition: all var(--transition-base);
-    margin-bottom: 24px;
+    margin-bottom: 32px;
+    text-align: center;
 }
 
-.dropZone:hover,
-.dropZoneActive {
+.dropzone:hover,
+.dropzoneActive {
     border-color: var(--accent-blue);
-    background: rgba(74, 108, 247, 0.03);
-    box-shadow: 0 0 30px var(--accent-blue-glow);
+    background: rgba(74, 108, 247, 0.05);
+    border-style: solid;
 }
 
 .hiddenInput {
     display: none;
 }
 
-.dropIcon {
-    font-size: 40px;
+.dropzoneIcon {
+    font-size: 32px;
     margin-bottom: 16px;
+    color: var(--accent-blue);
+    opacity: 0.8;
 }
 
 .dropTitle {
@@ -349,6 +352,93 @@
     }
 }
 
+/* ── Pipeline Control ──────────────────────────────────────────────── */
+.controlCard {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: 24px;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.controlHeader {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.pulseIcon {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.pulseIcon::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: inherit;
+    border-radius: 50%;
+    opacity: 0.6;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 0.6;
+    }
+
+    100% {
+        transform: scale(2.5);
+        opacity: 0;
+    }
+}
+
+.controlTitle {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.controlStatus {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.controlDesc {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+}
+
+.tipCard {
+    background: rgba(255, 255, 255, 0.02);
+    border-left: 3px solid var(--accent-blue);
+    padding: 16px 20px;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    margin-top: 32px;
+}
+
+.tipCard h3 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+}
+
+.tipCard p {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
 /* ── Login Form ────────────────────────────────────────── */
 .loginContainer {
     display: flex;
@@ -425,4 +515,154 @@
     color: #ff4d4d;
     font-size: 13px;
     margin-top: 12px;
+}
+
+/* ── Blueprints Section ────────────────────────────────── */
+.blueprintSection {
+    margin-top: 60px;
+    padding-top: 40px;
+    border-top: 1px solid var(--border-color);
+    animation: fadeIn 1s ease-out;
+}
+
+.blueprintTag {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    padding: 4px 10px;
+    border-radius: 100px;
+    letter-spacing: 0.5px;
+}
+
+.blueprintGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+    margin-top: 24px;
+}
+
+.blueprintCard {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.blueprintCard:hover {
+    transform: translateY(-4px);
+    border-color: #3b82f6;
+}
+
+.blueprintHeader {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.blueprintIcon {
+    font-size: 20px;
+}
+
+.blueprintName {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.blueprintBody {
+    flex: 1;
+}
+
+.statLine {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    font-size: 14px;
+}
+
+.statLabel {
+    color: var(--text-muted);
+}
+
+.statValue {
+    font-weight: 500;
+    text-align: right;
+}
+
+.statDivider {
+    height: 1px;
+    background: var(--border-color);
+    margin: 12px 0;
+    opacity: 0.5;
+}
+
+.highlight {
+    color: #3b82f6;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.secure {
+    color: #10b981;
+}
+
+.insecure {
+    color: #ef4444;
+}
+
+.blueprintPath {
+    font-family: var(--font-mono, monospace);
+    font-size: 12px;
+    color: var(--text-muted);
+    background: rgba(0, 0, 0, 0.2);
+    padding: 6px 10px;
+    border-radius: 6px;
+    word-break: break-all;
+    margin-top: 8px;
+}
+
+/* ── Status Colors ───────────────────────────────────── */
+.success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.info {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.chatBtn {
+    width: 100%;
+    margin-top: 12px;
+    padding: 12px;
+    background: transparent;
+    border: 1px solid #3b82f6;
+    color: #3b82f6;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.chatBtn:hover {
+    background: rgba(59, 130, 246, 0.1);
 }
